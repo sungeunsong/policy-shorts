@@ -66,58 +66,93 @@ export async function runCollectOnly(params: {
 
   const all = sourceResults.flatMap((r) => r.items);
 
-  const byUrl = new Map();
+  // 중복 제거
+  const byUrl = new Map<string, NormalizedItem>();
   for (const it of all) if (!byUrl.has(it.url)) byUrl.set(it.url, it);
+  const deduped = [...byUrl.values()];
 
-  const upsertedItems = [];
-  for (const it of byUrl.values()) {
-    const hash = sha1(`${it.title}|${it.url}`);
-    const src = await prisma.source.findUnique({ where: { sourceId: it.sourceId } });
-    if (!src) continue;
+  // ── 소스 맵 캐시 (sourceId string → DB id) ──
+  const sourceMap = new Map<string, string>();
+  for (const s of allSources) sourceMap.set(s.sourceId, s.id);
 
-    const saved = await prisma.item.upsert({
-      where: { url: it.url },
-      update: {
-        title: it.title,
-        publishedAt: it.publishedAt ?? null,
-        summary: it.summary ?? null,
-        contentText: it.contentText ?? null,
-        hash,
-        sourceId: src.id,
-      },
-      create: {
+  // ── 기존 Item 조회 (배치) ──
+  const urls = deduped.map((i) => i.url);
+  const existingItems = await prisma.item.findMany({
+    where: { url: { in: urls } },
+    select: { id: true, url: true },
+  });
+  const existingByUrl = new Map(existingItems.map((i) => [i.url, i.id]));
+
+  // ── 새 Item INSERT (배치) ──
+  const newItems = deduped.filter((i) => !existingByUrl.has(i.url) && sourceMap.has(i.sourceId));
+  if (newItems.length > 0) {
+    await prisma.item.createMany({
+      data: newItems.map((it) => ({
         title: it.title,
         url: it.url,
         publishedAt: it.publishedAt ?? null,
         summary: it.summary ?? null,
         contentText: it.contentText ?? null,
-        hash,
-        sourceId: src.id,
-      },
+        hash: sha1(`${it.title}|${it.url}`),
+        sourceId: sourceMap.get(it.sourceId)!,
+      })),
+      skipDuplicates: true,
     });
-    upsertedItems.push({ it, savedId: saved.id });
   }
 
-  const candidates = [];
-  for (const u of upsertedItems) {
-    const item = await prisma.item.findUnique({ where: { id: u.savedId }, include: { source: true } });
-    if (!item) continue;
+  // ── 기존 Item UPDATE (배치 개별, 하지만 변경된 것만) ──
+  const updateItems = deduped.filter((i) => existingByUrl.has(i.url) && sourceMap.has(i.sourceId));
+  await Promise.all(
+    updateItems.map((it) =>
+      prisma.item.update({
+        where: { url: it.url },
+        data: {
+          title: it.title,
+          publishedAt: it.publishedAt ?? null,
+          summary: it.summary ?? null,
+          contentText: it.contentText ?? null,
+          hash: sha1(`${it.title}|${it.url}`),
+        },
+      })
+    )
+  );
 
-    const rs = computeRuleScore({
-      title: item.title,
-      summary: item.summary,
-      contentText: item.contentText,
-      sourceId: u.it.sourceId,
-      dict: keywordDict,
-    });
+  // ── 최종 Item 로드 (배치) ──
+  const savedItems = await prisma.item.findMany({
+    where: { url: { in: urls } },
+    include: { source: true },
+  });
+  const itemByUrl = new Map(savedItems.map((i) => [i.url, i]));
 
-    const totalScore = rs.ruleScore;
-    const c = await prisma.candidate.upsert({
-      where: { runId_itemId: { runId: params.runId, itemId: item.id } },
-      update: { ruleScore: rs.ruleScore, totalScore, reasonsJson: JSON.stringify(rs.reasons), rank: null },
-      create: { runId: params.runId, itemId: item.id, ruleScore: rs.ruleScore, totalScore, reasonsJson: JSON.stringify(rs.reasons), rank: null },
+  // ── Rule Score 계산 + Candidate upsert (배치) ──
+  const candidateData = deduped
+    .map((it) => {
+      const item = itemByUrl.get(it.url);
+      if (!item) return null;
+      const rs = computeRuleScore({
+        title: item.title,
+        summary: item.summary,
+        contentText: item.contentText,
+        sourceId: it.sourceId,
+        dict: keywordDict,
+      });
+      return {
+        runId: params.runId,
+        itemId: item.id,
+        ruleScore: rs.ruleScore,
+        totalScore: rs.ruleScore,
+        reasonsJson: JSON.stringify(rs.reasons),
+        rank: null as number | null,
+      };
+    })
+    .filter(Boolean) as Array<{ runId: string; itemId: string; ruleScore: number; totalScore: number; reasonsJson: string; rank: number | null }>;
+
+  // Candidate createMany (skipDuplicates)
+  if (candidateData.length > 0) {
+    await prisma.candidate.createMany({
+      data: candidateData,
+      skipDuplicates: true,
     });
-    candidates.push(c);
   }
 
   const top = await prisma.candidate.findMany({
@@ -131,7 +166,7 @@ export async function runCollectOnly(params: {
     preset: preset ? { id: preset.id, slug: preset.slug, name: preset.name } : null,
     windowHours: params.windowHours,
     sources: sourceResults.map((r) => ({ sourceId: r.sourceId, ok: r.ok, count: r.count, error: r.error })),
-    totals: { fetched: all.length, deduped: byUrl.size, candidates: candidates.length },
+    totals: { fetched: all.length, deduped: byUrl.size, candidates: candidateData.length },
     trendingTop10: top.map((t) => ({ title: t.item.title, url: t.item.url, source: t.item.source.name, totalScore: t.totalScore })),
   });
 

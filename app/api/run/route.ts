@@ -6,6 +6,9 @@ import { getActivePresetId } from "@/src/pipeline/presetDict";
 
 const prisma = new PrismaClient();
 
+// Vercel 서버리스 함수 최대 실행 시간 (hobby: 60s, pro: 300s)
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
 
