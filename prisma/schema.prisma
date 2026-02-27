@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Source {
+  id          String   @id @default(cuid())
+  name        String
+  sourceId    String   @unique
+  type        String   // rss | html
+  url         String
+  enabled     Boolean  @default(true)
+  weight      Int      @default(0)
+  presetSlugs String?  // null = 모든 프리셋; "policy,finance" = 해당 프리셋에서만 수집
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items     Item[]
+}
+
+model TopicPreset {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String?
+  enabled       Boolean  @default(true)
+  defaultAiTopN Int      @default(20)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  keywords      TopicKeyword[]
+  runs          Run[]
+  appSettings   AppSetting[]
+}
+
+model TopicKeyword {
+  id        String   @id @default(cuid())
+  presetId  String
+  group     String   // change | life | noise
+  keyword   String
+  weight    Int
+
+  preset    TopicPreset @relation(fields: [presetId], references: [id])
+
+  @@unique([presetId, group, keyword])
+}
+
+model AppSetting {
+  id             String @id @default("singleton")
+  activePresetId String?
+  activePreset   TopicPreset? @relation(fields: [activePresetId], references: [id])
+  updatedAt      DateTime @updatedAt
+}
+
+model Run {
+  id              String   @id @default(cuid())
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  status          String   @default("running") // running | success | failed
+  mode            String   @default("collect_only") // collect_only | ai_rank
+  windowHours     Int      @default(24)
+
+  presetId        String?
+  preset          TopicPreset? @relation(fields: [presetId], references: [id])
+
+  aiRequested     Boolean  @default(false)
+  aiUsed          Boolean  @default(false)
+  aiTopN          Int      @default(20)
+  aiCalls         Int      @default(0)
+  aiTokensEst     Int      @default(0)
+  aiCostEstKrw    Int      @default(0)
+
+  summaryJson     String?
+
+  candidates      Candidate[]
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  sourceId    String
+  title       String
+  url         String   @unique
+  publishedAt DateTime?
+  fetchedAt   DateTime @default(now())
+  summary     String?
+  contentText String?
+  hash        String
+
+  source      Source   @relation(fields: [sourceId], references: [id])
+  judgment    Judgment?
+  candidates  Candidate[]
+}
+
+model Judgment {
+  id              String   @id @default(cuid())
+  itemId          String   @unique
+  isLifeImpact    Boolean
+  impactCategory  String
+  why             String
+  whoAffectedJson String
+  effectiveDate   DateTime?
+  whatToDoJson    String
+  confidence      Float
+  gptScore        Int
+  rawJson         String
+  createdAt       DateTime @default(now())
+
+  item            Item @relation(fields: [itemId], references: [id])
+}
+
+model Candidate {
+  id          String   @id @default(cuid())
+  runId       String
+  itemId      String
+  ruleScore   Int
+  totalScore  Int
+  reasonsJson String
+  rank        Int?
+
+  run         Run @relation(fields: [runId], references: [id])
+  item        Item @relation(fields: [itemId], references: [id])
+
+  @@unique([runId, itemId])
+}
