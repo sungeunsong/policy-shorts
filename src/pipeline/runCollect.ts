@@ -44,7 +44,8 @@ export async function runCollectOnly(params: {
     return slugs.includes(preset.slug);
   });
 
-  const limit = pLimit(params.fetchConcurrency);
+  // 타임아웃 방지를 위해 클라이언트의 concurrency 옵션보다 더 넉넉하게 Vercel 환경에서 병렬 실행
+  const limit = pLimit(10);
 
   const sourceResults = await Promise.all(
     sources.map((s) =>

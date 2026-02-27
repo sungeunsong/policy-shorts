@@ -104,13 +104,14 @@ export async function runAiRank(params: {
 
     const client = new OpenAI({ apiKey });
 
-    // ruleScore >= 0인 후보 전체 조회 (노이즈 제거만)
+    // ruleScore >= 0인 후보 전체 조회 (노이즈 제거만, 최대 50개로 제한하여 타임아웃 방지)
     const candidates = await prisma.candidate.findMany({
         where: {
             runId: params.runId,
             ruleScore: { gte: 0 },
         },
         orderBy: [{ ruleScore: "desc" }],
+        take: 50,
         include: {
             item: {
                 include: { source: true },

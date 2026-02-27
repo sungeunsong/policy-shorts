@@ -3,7 +3,7 @@ import { normalizeText } from "@/src/lib/text";
 import type { NormalizedItem } from "./types";
 
 const parser: Parser = new Parser({
-  timeout: 20_000,
+  timeout: 10_000,
   headers: { "User-Agent": process.env.USER_AGENT ?? "policy-shorts-hunter/0.1" },
 });
 
