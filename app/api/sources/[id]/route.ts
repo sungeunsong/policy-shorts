@@ -3,10 +3,13 @@ import { NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: Request, ctx: RouteContext) {
+  const { id } = await ctx.params;
   const body = await req.json();
   const updated = await prisma.source.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       name: body.name,
       type: body.type,
@@ -18,7 +21,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ source: updated });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
-  await prisma.source.delete({ where: { id: params.id } });
+export async function DELETE(_req: Request, ctx: RouteContext) {
+  const { id } = await ctx.params;
+  await prisma.source.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
