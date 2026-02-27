@@ -80,13 +80,18 @@ async function upsertSources() {
     // ─── 언론사 · 사회 (육아/교육 관련) ──────────────────────────────────
     {
       name: "동아일보 사회", sourceId: "donga_society",
-      type: "rss", url: "https://rss.donga.com/society.xml",
+      type: "rss", url: "https://rss.donga.com/health.xml",
       enabled: true, weight: 5, presetSlugs: "parenting",
     },
     {
-      name: "한국경제 사회", sourceId: "hk_society",
-      type: "rss", url: "https://www.hankyung.com/feed/society",
-      enabled: true, weight: 5, presetSlugs: "parenting",
+      name: "연합뉴스 사회", sourceId: "yna_society",
+      type: "rss", url: "https://www.yna.co.kr/RSS/society.xml",
+      enabled: true, weight: 6, presetSlugs: "parenting",
+    },
+    {
+      name: "연합뉴스 교육", sourceId: "yna_education",
+      type: "rss", url: "https://www.yna.co.kr/RSS/education.xml",
+      enabled: true, weight: 7, presetSlugs: "parenting",
     },
   ];
 
