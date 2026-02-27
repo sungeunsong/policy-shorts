@@ -100,22 +100,20 @@ export async function runCollectOnly(params: {
     });
   }
 
-  // ── 기존 Item UPDATE (배치 개별, 하지만 변경된 것만) ──
+  // ── 기존 Item UPDATE (순차 처리: Connection Pool 고갈 및 타임아웃 방지) ──
   const updateItems = deduped.filter((i) => existingByUrl.has(i.url) && sourceMap.has(i.sourceId));
-  await Promise.all(
-    updateItems.map((it) =>
-      prisma.item.update({
-        where: { url: it.url },
-        data: {
-          title: it.title,
-          publishedAt: it.publishedAt ?? null,
-          summary: it.summary ?? null,
-          contentText: it.contentText ?? null,
-          hash: sha1(`${it.title}|${it.url}`),
-        },
-      })
-    )
-  );
+  for (const it of updateItems) {
+    await prisma.item.update({
+      where: { url: it.url },
+      data: {
+        title: it.title,
+        publishedAt: it.publishedAt ?? null,
+        summary: it.summary ?? null,
+        contentText: it.contentText ?? null,
+        hash: sha1(`${it.title}|${it.url}`),
+      },
+    });
+  }
 
   // ── 최종 Item 로드 (배치) ──
   const savedItems = await prisma.item.findMany({
