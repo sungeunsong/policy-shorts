@@ -61,8 +61,19 @@ export function RunNowClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode, windowHours, presetId: activePresetId }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error ?? "run failed");
+      if (!res.ok) {
+        const text = await res.text();
+        let message = `run failed (${res.status})`;
+        try {
+          const json = JSON.parse(text);
+          if (json.error) message = json.error;
+        } catch {
+          message = text.slice(0, 100);
+        }
+        throw new Error(message);
+      }
+
+      const json = await res.json().catch(() => ({}));
       setStatus("done");
       setMessage("✓ 완료! 결과를 갱신합니다...");
       // 서버 컴포넌트 데이터 갱신 (페이지 이동 없이)
