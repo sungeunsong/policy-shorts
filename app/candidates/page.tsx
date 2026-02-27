@@ -2,6 +2,8 @@ import { prisma } from "@/src/lib/prisma";
 import { Card, CardBody, CardHeader } from "@/src/ui/Card";
 import { Chip } from "@/src/ui/Chip";
 
+export const dynamic = "force-dynamic";
+
 export default async function CandidatesPage() {
   const latestRun = await prisma.run.findFirst({
     orderBy: { startedAt: "desc" },
@@ -27,7 +29,7 @@ export default async function CandidatesPage() {
           <h1 className="text-xl font-bold text-white/90">Candidates</h1>
           <p className="text-xs text-white/35 mt-1">
             {latestRun
-              ? `최근 실행 · ${new Date(latestRun.startedAt).toLocaleString("ko-KR")}${latestRun.preset ? ` · ${latestRun.preset.name}` : ""}`
+              ? `최근 실행 · ${new Date(latestRun.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}${latestRun.preset ? ` · ${latestRun.preset.name}` : ""}`
               : "아직 실행 기록이 없습니다"}
           </p>
         </div>

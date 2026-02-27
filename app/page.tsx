@@ -3,6 +3,9 @@ import { Card, CardBody, CardHeader } from "@/src/ui/Card";
 import { Chip } from "@/src/ui/Chip";
 import { RunNowClient } from "@/app/_components/RunNowClient";
 
+// 항상 최신 데이터를 가져오도록 캐시 비활성화
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const latestRun = await prisma.run.findFirst({
     orderBy: { startedAt: "desc" },
@@ -57,7 +60,7 @@ export default async function DashboardPage() {
                   <>
                     마지막 실행:{" "}
                     <span className="text-white/55">
-                      {new Date(latestRun.startedAt).toLocaleString("ko-KR")}
+                      {new Date(latestRun.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
                     </span>
                     {latestRun.preset && (
                       <> · 프리셋: <span className="text-white/55">{latestRun.preset.name}</span></>

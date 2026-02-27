@@ -2,6 +2,9 @@ import { prisma } from "@/src/lib/prisma";
 import { Card, CardBody } from "@/src/ui/Card";
 import { Chip } from "@/src/ui/Chip";
 
+export const dynamic = "force-dynamic";
+
+
 export default async function RunsPage() {
   const runs = await prisma.run.findMany({
     orderBy: { startedAt: "desc" },
@@ -40,14 +43,14 @@ export default async function RunsPage() {
                     <summary className="list-none flex items-start gap-3 cursor-pointer select-none">
                       {/* Status dot */}
                       <div className={`shrink-0 w-2.5 h-2.5 rounded-full mt-2 ${r.status === "success" ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
-                          : r.status === "failed" ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
-                            : "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
+                        : r.status === "failed" ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"
+                          : "bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.5)]"
                         }`} />
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-medium text-white/80">
-                            {new Date(r.startedAt).toLocaleString("ko-KR")}
+                            {new Date(r.startedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
                           </span>
                           {r.preset && (
                             <Chip tone="accent">{r.preset.name}</Chip>
