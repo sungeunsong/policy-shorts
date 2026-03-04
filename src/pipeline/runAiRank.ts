@@ -83,7 +83,7 @@ async function callOpenAI(
             messages: [{ role: "user", content: prompt }],
             response_format: { type: "json_object" },
             temperature: 0.3,
-            max_tokens: 800,
+            max_tokens: 3000,
         },
         { timeout: TIMEOUT_MS }
     );
