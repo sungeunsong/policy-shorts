@@ -26,8 +26,42 @@ type AiRankResult = {
     tokensUsed: number;
 };
 
+const PRESET_PROMPT: Record<string, { role: string; criteria: string[] }> = {
+    society: {
+        role: "한국 사회 이슈 콘텐츠 기획자",
+        criteria: [
+            "파급력이 크고 사회적 공분 또는 경각심을 일으키는 사건·사고·범죄",
+            '"무슨 일이 일어났고, 어떤 의미인가" 명확한 스토리가 있는 것',
+            "시의성 있고 화제성 높은 사건 (수사 결과, 판결, 사고 경위 등)",
+            "쇼츠 1분 또는 블로그 1편으로 설명 가능한 핵심이 있는 것",
+            "단순 보도자료·기념식·행사 홍보는 제외",
+        ],
+    },
+    entertainment: {
+        role: "한국 연예·대중문화 콘텐츠 기획자",
+        criteria: [
+            "현재 화제가 되고 있는 연예인·드라마·영화·음악 소식",
+            '"왜 지금 핫한가" 명확한 이유가 있는 것 (흥행, 역주행, 논란, 컴백, 시청률 등)',
+            "팬덤 반응이나 대중의 관심이 집중되는 시의성 있는 것",
+            "쇼츠 1분 또는 블로그 1편으로 설명 가능한 핵심이 있는 것",
+            "단순 일정 공지·보도자료·기념식은 제외",
+        ],
+    },
+    _default: {
+        role: "한국 정책·생활·금융 정보 콘텐츠 기획자",
+        criteria: [
+            "일반 대중(직장인·주부·청년)의 실제 생활에 직접적인 영향을 미치는 변화",
+            '"무엇이 바뀌었고, 나에게 어떤 영향인지" 명확한 스토리가 있는 것',
+            "신선하고 시의성 있는 정보 (새로운 제도, 정책 변경, 금액 변동 등)",
+            "쇼츠 1분 또는 블로그 1편으로 설명 가능한 핵심이 있는 것",
+            "단순 행사/기념식/인터뷰/사건사고는 제외",
+        ],
+    },
+};
+
 function buildPrompt(
     presetName: string,
+    presetSlug: string,
     presetDescription: string | null,
     candidates: CandidateWithItem[]
 ): string {
@@ -40,17 +74,16 @@ function buildPrompt(
         })
         .join("\n\n");
 
-    return `당신은 한국 정책·생활·금융 정보 콘텐츠 기획자입니다.
+    const { role, criteria } = PRESET_PROMPT[presetSlug] ?? PRESET_PROMPT._default;
+    const criteriaText = criteria.map((c) => `- ${c}`).join("\n");
+
+    return `당신은 ${role}입니다.
 주제: "${presetName}"${presetDescription ? ` (${presetDescription})` : ""}
 
 아래 뉴스 기사 ${candidates.length}개 중, 이 주제로 유튜브 쇼츠 또는 블로그 포스팅 소재로 가장 적합한 기사 TOP 10을 선정해주세요.
 
 선정 기준:
-- 일반 대중(직장인·주부·청년)의 실제 생활에 직접적인 영향을 미치는 변화
-- "무엇이 바뀌었고, 나에게 어떤 영향인지" 명확한 스토리가 있는 것
-- 신선하고 시의성 있는 정보 (새로운 제도, 정책 변경, 금액 변동 등)
-- 쇼츠 1분 또는 블로그 1편으로 설명 가능한 핵심이 있는 것
-- 단순 행사/기념식/인터뷰/사건사고는 제외
+${criteriaText}
 
 --- 기사 목록 ---
 ${articleList}
@@ -97,6 +130,7 @@ async function callOpenAI(
 export async function runAiRank(params: {
     runId: string;
     presetName: string;
+    presetSlug?: string | null;
     presetDescription?: string | null;
 }): Promise<AiRankResult> {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -125,6 +159,7 @@ export async function runAiRank(params: {
 
     const prompt = buildPrompt(
         params.presetName,
+        params.presetSlug ?? "_default",
         params.presetDescription ?? null,
         candidates
     );

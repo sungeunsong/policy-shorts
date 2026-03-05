@@ -77,7 +77,7 @@ async function upsertSources() {
       enabled: true, weight: 6, presetSlugs: "housing",
     },
 
-    // ─── 언론사 · 사회 (육아/교육 관련) ──────────────────────────────────
+    // ─── 언론사 · 사회·육아 공통 ─────────────────────────────────────────
     {
       name: "동아일보 건강", sourceId: "donga_health",
       type: "rss", url: "https://rss.donga.com/health.xml",
@@ -86,7 +86,7 @@ async function upsertSources() {
     {
       name: "동아일보 사회", sourceId: "donga_national",
       type: "rss", url: "https://rss.donga.com/national.xml",
-      enabled: true, weight: 6, presetSlugs: "parenting",
+      enabled: true, weight: 7, presetSlugs: "parenting,society",
     },
     {
       name: "동아일보 여성", sourceId: "donga_woman",
@@ -96,7 +96,61 @@ async function upsertSources() {
     {
       name: "한겨레 종합", sourceId: "hani_all",
       type: "rss", url: "https://www.hani.co.kr/rss/",
-      enabled: true, weight: 7, presetSlugs: "parenting",
+      enabled: true, weight: 7, presetSlugs: "parenting,society",
+    },
+
+    // ─── 사회·사건사고 전용 ──────────────────────────────────────────────
+    {
+      name: "연합뉴스 속보", sourceId: "yna_briefing",
+      type: "rss", url: "https://www.yonhapnews.co.kr/rss/briefing.xml",
+      enabled: true, weight: 9, presetSlugs: "society",
+    },
+    {
+      name: "연합뉴스 사회", sourceId: "yna_society",
+      type: "rss", url: "https://www.yonhapnews.co.kr/rss/socialscience.xml",
+      enabled: true, weight: 8, presetSlugs: "society",
+    },
+    {
+      name: "조선일보 사회", sourceId: "chosun_national",
+      type: "rss", url: "https://www.chosun.com/arc/outboundfeeds/rss/category/national/",
+      enabled: true, weight: 7, presetSlugs: "society",
+    },
+    {
+      name: "중앙일보 사회", sourceId: "joongang_society",
+      type: "rss", url: "https://rss.joins.com/joins_news_rss.xml",
+      enabled: true, weight: 7, presetSlugs: "society",
+    },
+    {
+      name: "MBC 뉴스 사회", sourceId: "mbc_society",
+      type: "rss", url: "https://imnews.imbc.com/rss/news/news_00.xml",
+      enabled: true, weight: 7, presetSlugs: "society",
+    },
+
+    // ─── 연예 핫 이슈 ─────────────────────────────────────────────────────
+    {
+      name: "동아일보 연예", sourceId: "donga_entertainment",
+      type: "rss", url: "https://rss.donga.com/entertainment.xml",
+      enabled: true, weight: 8, presetSlugs: "entertainment",
+    },
+    {
+      name: "매일경제 연예", sourceId: "mk_entertainment",
+      type: "rss", url: "https://www.mk.co.kr/rss/30200036/",
+      enabled: true, weight: 7, presetSlugs: "entertainment",
+    },
+    {
+      name: "한국경제 연예", sourceId: "hk_entertainment",
+      type: "rss", url: "https://www.hankyung.com/feed/entertainment",
+      enabled: true, weight: 7, presetSlugs: "entertainment",
+    },
+    {
+      name: "조선일보 연예", sourceId: "chosun_entertainment",
+      type: "rss", url: "https://www.chosun.com/arc/outboundfeeds/rss/category/entertainments/",
+      enabled: true, weight: 7, presetSlugs: "entertainment",
+    },
+    {
+      name: "중앙일보 연예", sourceId: "joongang_entertainment",
+      type: "rss", url: "https://rss.joins.com/joins_life_rss.xml",
+      enabled: true, weight: 7, presetSlugs: "entertainment",
     },
   ];
 
@@ -174,6 +228,59 @@ const PRESETS = [
         "수당": 8, "급여": 6, "바우처": 7, "지원": 6, "교육비": 7, "학자금": 6,
       },
       noise: { "연예": -20, "스포츠": -20, "사건": -12, "사고": -12, "논란": -12, "개최": -10, "캠페인": -10 },
+    },
+  },
+  {
+    slug: "society",
+    name: "사회·사건사고",
+    description: "사건/사고/수사/판결 등 사회 핫 이슈",
+    defaultAiTopN: 20,
+    keywords: {
+      change: {
+        // 사건 발생·수사·판결 신호
+        "발생": 7, "적발": 8, "구속": 8, "검거": 7, "체포": 7, "수사": 6,
+        "기소": 7, "판결": 7, "선고": 7, "폭발": 8, "화재": 7, "붕괴": 8,
+        "충돌": 6, "사망": 6, "추락": 7, "유출": 6, "논란": 5, "충격": 5,
+      },
+      life: {
+        // 관련 기관·분류
+        "경찰": 5, "검찰": 5, "법원": 5, "소방": 5,
+        "마약": 6, "음주": 5, "사기": 6, "불법": 5, "범죄": 5,
+        "피해": 5, "학교": 4, "병원": 4, "도로": 4, "군": 4,
+      },
+      noise: {
+        // 정치·경제·연예 노이즈
+        "정책": -8, "법안": -10, "예산": -10, "금리": -10, "부동산": -10,
+        "청약": -10, "연예": -10, "스포츠": -10, "개최": -8, "캠페인": -8,
+      },
+    },
+  },
+  {
+    slug: "entertainment",
+    name: "연예 핫 이슈",
+    description: "화제·흥행·컴백·시청률 등 연예 핫 이슈",
+    defaultAiTopN: 20,
+    keywords: {
+      change: {
+        // 화제성 · 트렌드 신호
+        "화제": 8, "열풍": 7, "역주행": 8, "흥행": 7, "대박": 6, "인기": 5,
+        "1위": 8, "컴백": 6, "데뷔": 5, "발표": 4, "공개": 5, "개봉": 6, "방영": 5,
+        "출연": 4, "선정": 5, "돌풍": 7, "화제작": 6,
+      },
+      life: {
+        // 연예 카테고리 · 장르
+        "드라마": 6, "예능": 5, "아이돌": 5, "K팝": 5, "케이팝": 5,
+        "뮤직비디오": 5, "앨범": 5, "콘서트": 5, "팬미팅": 4,
+        "영화": 5, "시청률": 7, "스트리밍": 5, "OST": 5,
+        "배우": 4, "가수": 4, "그룹": 4, "아티스트": 4,
+        "OTT": 5, "넷플릭스": 5, "시즌": 4,
+      },
+      noise: {
+        // 정책·정치·경제 노이즈 제거
+        "정책": -15, "법안": -15, "예산": -15, "국회": -12, "정부": -10,
+        "대통령": -12, "선거": -12, "세금": -10, "금리": -10, "부동산": -10,
+        "청약": -10, "보험료": -10,
+      },
     },
   },
 ];

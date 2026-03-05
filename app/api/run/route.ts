@@ -45,11 +45,13 @@ export async function POST(req: Request) {
         include: { preset: true },
       });
       const presetName = runData?.preset?.name ?? "정책·제도";
+      const presetSlug = runData?.preset?.slug ?? null;
       const presetDescription = runData?.preset?.description ?? null;
 
       const aiResult = await runAiRank({
         runId: run.id,
         presetName,
+        presetSlug,
         presetDescription,
       });
 
